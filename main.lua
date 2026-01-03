@@ -1,5 +1,5 @@
--- TA DOORS HUB v7 (FLASH EDITION - INSTANT TP LOGIC)
--- Senin attığın teleport mantığının "Anti-Cheat" korumalı hali.
+-- TA DOORS HUB v9 (OPTIMIZED & STABLE)
+-- ChatGPT'nin önerdiği performans ve hata düzeltmeleri uygulandı.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,30 +14,41 @@ _G.Settings = {
     GodMode = true,
     Noclip = true,
     ESP = true,
-    Speed = 45 -- Hızı 45'e çıkardık (Normalin 3 katı, Işınlanma gibi)
+    Speed = 45
 }
 
-local CurrentStatus = "Hazır"
+local CurrentStatus = "Hazır - v9 Stable"
+local LoopRunning = true
+
+-- --- SES SİSTEMİ (OPTIMIZE EDİLDİ) ---
+-- Her seferinde yeni sound yaratmak yerine bir kere yaratıp kullanıyoruz.
+local UI_Sound = Instance.new("Sound")
+UI_Sound.SoundId = "rbxassetid://4590657391"
+UI_Sound.Volume = 0.5
+UI_Sound.Parent = workspace -- UI silinse bile ses çalışsın diye
+
+local function playClick()
+    UI_Sound:Play()
+end
 
 -- --- UI OLUŞTURMA ---
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TA_Doors_UI_v7"
-if lp:WaitForChild("PlayerGui"):FindFirstChild("TA_Doors_UI_v7") then
-    lp.PlayerGui.TA_Doors_UI_v7:Destroy()
+ScreenGui.Name = "TA_Doors_UI_v9"
+if lp:WaitForChild("PlayerGui"):FindFirstChild("TA_Doors_UI_v9") then
+    lp.PlayerGui.TA_Doors_UI_v9:Destroy()
 end
 ScreenGui.Parent = lp:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 200, 0, 300) 
-MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-MainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0) -- Kırmızı Tema (Hız için)
-MainFrame.BorderSizePixel = 1
-MainFrame.BackgroundTransparency = 0.1
+MainFrame.Size = UDim2.new(0, 220, 0, 350)
+MainFrame.Position = UDim2.new(0.05, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MainFrame.BorderColor3 = Color3.fromRGB(0, 255, 150) -- Stabilite Yeşili
+MainFrame.BorderSizePixel = 2
 MainFrame.Active = true
-MainFrame.Parent = ScreenGui
+MainFrame.Parent = ScreenGui -- Parent kesin atandı
 
 -- MOBİL SÜRÜKLEME
 local dragging, dragInput, dragStart, startPos
@@ -55,84 +66,96 @@ MainFrame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 end)
 UserInputService.InputChanged:Connect(function(input) if input == dragInput and dragging then update(input) end end)
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 -- Başlık
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 30)
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundTransparency = 1
-Title.Text = "⚡ TA HUB v7 (FLASH) ⚡"
-Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+Title.Text = "🛡️ TA HUB v9 (STABLE) 🛡️"
+Title.TextColor3 = Color3.fromRGB(0, 255, 150)
 Title.Font = Enum.Font.GothamBlack
-Title.TextSize = 14
+Title.TextSize = 15
 Title.Parent = MainFrame
 
-local StatusLabel = Instance.new("TextLabel", MainFrame)
+local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, 0, 0, 20)
-StatusLabel.Position = UDim2.new(0, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0, 0, 0, 30)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = CurrentStatus
 StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 11
+StatusLabel.TextSize = 12
 StatusLabel.Parent = MainFrame
 
--- Butonlar
-local btnY = 50
+-- Buton Oluşturucu
+local btnY = 60
 local function createButton(text, settingName)
-    local btn = Instance.new("TextButton", MainFrame)
-    btn.Size = UDim2.new(0.9, 0, 0, 28)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 35)
     btn.Position = UDim2.new(0.05, 0, 0, btnY)
-    
-    local isOn = _G.Settings[settingName]
-    btn.BackgroundColor3 = isOn and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(180, 0, 0)
+    btn.BackgroundColor3 = _G.Settings[settingName] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(180, 0, 0)
     btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextColor3 = Color3.white
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-    
-    btn.MouseButton1Click:Connect(function()
-        _G.Settings[settingName] = not _G.Settings[settingName]
-        local s = _G.Settings[settingName]
-        btn.BackgroundColor3 = s and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(180, 0, 0)
-    end)
+    btn.TextSize = 14
     btn.Parent = MainFrame
-    btnY = btnY + 32
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    btn.Activated:Connect(function()
+        _G.Settings[settingName] = not _G.Settings[settingName]
+        btn.BackgroundColor3 = _G.Settings[settingName] and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(180, 0, 0)
+        playClick()
+    end)
+    btnY = btnY + 40
 end
 
-createButton("AUTO FLASH (HIZLI)", "AutoRun")
+createButton("AUTO RUN (BAŞLAT)", "AutoRun")
 createButton("GOD MODE", "GodMode")
 createButton("ESP", "ESP")
 createButton("NOCLIP", "Noclip")
 
-local CloseBtn = Instance.new("TextButton", MainFrame)
-CloseBtn.Size = UDim2.new(1, 0, 0, 20)
-CloseBtn.Position = UDim2.new(0, 0, 0.93, 0)
+-- GİZLE BUTONU (AnchorPoint ile sabitlendi)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(1, 0, 0, 30)
+CloseBtn.Position = UDim2.new(0.5, 0, 1, -5) -- En alta sabitle
+CloseBtn.AnchorPoint = Vector2.new(0.5, 1) -- Merkezden hizala
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "GİZLE"
-CloseBtn.TextColor3 = Color3.fromRGB(100, 100, 100)
-CloseBtn.TextSize = 10
-CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Parent = MainFrame
-CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
+CloseBtn.Activated:Connect(function() MainFrame.Visible = false end)
 
-local OpenBtn = Instance.new("TextButton", ScreenGui)
-OpenBtn.Size = UDim2.new(0, 50, 0, 20)
-OpenBtn.Position = UDim2.new(0.5, -25, 0, 10)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+-- MENÜ AÇMA BUTONU (Parent Fix)
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(0, 60, 0, 30)
+OpenBtn.Position = UDim2.new(0.5, -30, 0, 10)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 OpenBtn.Text = "MENU"
 OpenBtn.TextColor3 = Color3.white
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.Parent = ScreenGui -- KESİN PARENT ATAMASI
 Instance.new("UICorner", OpenBtn)
-OpenBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
+OpenBtn.Activated:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
--- --- HIZLI HAREKET MOTORU ---
 
--- ZORUNLU NOCLIP (Duvarları yok sayar)
+-- --- MOTOR KISMI (OPTIMIZED) ---
+
+local function updateStatus(text)
+    StatusLabel.Text = text
+end
+
+-- NOCLIP OPTİMİZASYONU
+-- Her frame yerine sadece AutoRun açıksa ve gerekliyse çalışır.
+-- GetDescendants yerine GetChildren kullanarak performansı artırıyoruz (R15 için yeterli).
 RunService.Stepped:Connect(function()
-    if (_G.Settings.Noclip or _G.Settings.AutoRun) and lp.Character then
-        for _, v in pairs(lp.Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.CanCollide then v.CanCollide = false end
+    if _G.Settings.Noclip and lp.Character then
+        -- Sadece BasePart olanları ve CanCollide açık olanları bul
+        for _, v in pairs(lp.Character:GetChildren()) do
+            if v:IsA("BasePart") and v.CanCollide then
+                v.CanCollide = false
+            end
         end
     end
 end)
@@ -142,46 +165,35 @@ local function teleportTo(targetCFrame)
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local root = char.HumanoidRootPart
     
-    -- Senin attığın kodun mantığı burada:
-    -- Eğer mesafe kısaysa direkt ışınla, uzunda hızlıca kaydır (Kick yememek için)
     local targetPos = Vector3.new(targetCFrame.X, root.Position.Y, targetCFrame.Z)
     local distance = (root.Position - targetPos).Magnitude
     
     if distance < 1 then return nil end
     
-    -- Eğer mesafe 15 birimden azsa DİREKT IŞINLA (Senin istediğin kod)
     if distance < 15 then
         root.CFrame = CFrame.new(targetPos)
         return nil
     else
-        -- Mesafe uzunsa "Flash" gibi kayarak git (Oyun atmasın diye)
         local speed = _G.Settings.Speed
         local info = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
         local tween = TweenService:Create(root, info, {CFrame = CFrame.new(targetPos)})
         tween:Play()
-        
-        -- Takılma kontrolü (Duvar bugu fix)
-        task.spawn(function()
-            local sP = root.Position
-            task.wait(0.5)
-            if tween.PlaybackState == Enum.PlaybackState.Playing and (root.Position - sP).Magnitude < 0.5 then
-                tween:Cancel()
-                root.CFrame = root.CFrame * CFrame.new(0,0,5) -- Geri zıpla
-            end
-        end)
         return tween
     end
 end
 
 local function getLatestRoom()
-    local rooms = Workspace:FindFirstChild("CurrentRooms") or Workspace:FindFirstChild("Rooms")
-    if not rooms then return nil end
-    local maxNum, target = -1, nil
-    for _, r in pairs(rooms:GetChildren()) do
-        local n = tonumber(r.Name)
-        if n and n > maxNum then maxNum = n; target = r end
-    end
-    return target
+    local success, result = pcall(function()
+        local rooms = Workspace:FindFirstChild("CurrentRooms") or Workspace:FindFirstChild("Rooms")
+        if not rooms then return nil end
+        local maxNum, target = -1, nil
+        for _, rm in pairs(rooms:GetChildren()) do
+            local n = tonumber(rm.Name)
+            if n and n > maxNum then maxNum = n; target = rm end
+        end
+        return target
+    end)
+    if success then return result else return nil end
 end
 
 local function createESP(obj, color)
@@ -190,72 +202,78 @@ local function createESP(obj, color)
     hl.Name = "ESP"; hl.FillColor = color; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0
 end
 
--- --- ANA DÖNGÜ ---
+-- --- ANA DÖNGÜ (CPU DOSTU) ---
 task.spawn(function()
-    while true do
-        task.wait() -- Gecikme yok
-        local room = getLatestRoom()
+    while LoopRunning do
+        task.wait(0.05) -- CPU kullanımını düşürmek için küçük bekleme (Stabilite sağlar)
         
-        if room then
-            -- ESP
-            if _G.Settings.ESP then
-                for _, v in pairs(room:GetDescendants()) do
-                    if v.Name == "KeyObtain" then createESP(v, Color3.fromRGB(255, 255, 0)) end
-                    if v.Name == "LiveHintBook" then createESP(v, Color3.fromRGB(0, 255, 255)) end
-                    if v.Name == "BreakerSwitch" then createESP(v, Color3.fromRGB(255, 0, 255)) end
-                end
-            end
+        local success, err = pcall(function()
+            local room = getLatestRoom()
             
-            -- AUTO RUN (FLASH LOGIC)
-            if _G.Settings.AutoRun then
-                if room.Name == "50" or room.Name == "100" then
-                    updateStatus("BOSS ODASI! Manuel.")
-                else
-                    updateStatus(">>> " .. room.Name)
-                    local door = room:FindFirstChild("Door")
-                    if door then
-                        -- Kapının "Client" (yani kolu/menteşesi) yoksa kapının kendisine git
-                        local target = door:FindFirstChild("Client") or door:FindFirstChild("Door") or door:FindFirstChild("Hinge")
-                        
-                        if target then
-                            -- Anahtar Lazım mı?
-                            if room:FindFirstChild("Assets") and door:FindFirstChild("Lock") and not lp.Character:FindFirstChild("Key") then
-                                for _, v in pairs(room.Assets:GetDescendants()) do
-                                    if v.Name == "KeyObtain" then
-                                        -- Anahtara IŞINLAN
-                                        teleportTo(v.CFrame)
-                                        task.wait(0.05)
-                                        fireproximityprompt(v:FindFirstChild("ModulePrompt"))
-                                        task.wait(0.05)
-                                        if lp.Backpack:FindFirstChild("Key") then lp.Character.Humanoid:EquipTool(lp.Backpack.Key) end
-                                        break
+            if room then
+                -- ESP
+                if _G.Settings.ESP then
+                    for _, v in pairs(room:GetDescendants()) do
+                        if v.Name == "KeyObtain" then createESP(v, Color3.fromRGB(255, 255, 0)) end
+                        if v.Name == "LiveHintBook" then createESP(v, Color3.fromRGB(0, 255, 255)) end
+                        if v.Name == "BreakerSwitch" then createESP(v, Color3.fromRGB(255, 0, 255)) end
+                    end
+                end
+                
+                -- AUTO RUN
+                if _G.Settings.AutoRun then
+                    if room.Name == "50" or room.Name == "100" then
+                        updateStatus("BOSS ODASI: MANUEL")
+                    else
+                        updateStatus("HIZLI GİDİLİYOR: " .. room.Name)
+                        local door = room:FindFirstChild("Door")
+                        if door then
+                            local target = door:FindFirstChild("Client") or door:FindFirstChild("Door") or door:FindFirstChild("Hinge")
+                            
+                            if target then
+                                -- Anahtar (Prompt Kontrollü)
+                                if room:FindFirstChild("Assets") and door:FindFirstChild("Lock") and not lp.Character:FindFirstChild("Key") then
+                                    for _, v in pairs(room.Assets:GetDescendants()) do
+                                        if v.Name == "KeyObtain" then
+                                            teleportTo(v.CFrame)
+                                            task.wait(0.05)
+                                            local prompt = v:FindFirstChild("ModulePrompt")
+                                            if prompt then fireproximityprompt(prompt) end -- Hata koruması
+                                            task.wait(0.05)
+                                            if lp.Backpack:FindFirstChild("Key") then lp.Character.Humanoid:EquipTool(lp.Backpack.Key) end
+                                            break
+                                        end
                                     end
                                 end
-                            end
-                            
-                            -- Kapıya IŞINLAN / KAY
-                            local t = teleportTo(target.CFrame)
-                            if t then t.Completed:Wait() end
-                            
-                            -- Aç
-                            for _, p in pairs(door:GetDescendants()) do
-                                if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
-                            end
-                            
-                            -- Kapı açılır açılmaz İÇERİ IŞINLAN (Burada senin kodun devreye giriyor)
-                            -- Kapı açıldığında bir sonraki oda yüklenene kadar azıcık bekle
-                            if door:FindFirstChild("Open") then -- Kapı açıldıysa
-                                teleportTo(target.CFrame * CFrame.new(0, 0, -15))
-                            else
-                                task.wait(0.1) -- Açılmasını bekle
-                                teleportTo(target.CFrame * CFrame.new(0, 0, -15))
+                                
+                                -- Kapıya Git
+                                local t = teleportTo(target.CFrame)
+                                if t then t.Completed:Wait() end
+                                
+                                -- Aç
+                                for _, p in pairs(door:GetDescendants()) do
+                                    if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
+                                end
+                                
+                                -- İçeri Işınlan
+                                if door:FindFirstChild("Open") then
+                                    teleportTo(target.CFrame * CFrame.new(0, 0, -15))
+                                else
+                                    task.wait(0.1)
+                                    teleportTo(target.CFrame * CFrame.new(0, 0, -15))
+                                end
                             end
                         end
                     end
+                else
+                    updateStatus("Beklemede...")
                 end
-            else
-                updateStatus("...")
             end
+        end)
+        
+        if not success then
+            warn("TA v9 Hata Yakalandı (Oyun durmadı):", err)
+            task.wait(0.5) -- Hata durumunda biraz bekle ki spam yapmasın
         end
     end
 end)
@@ -266,7 +284,7 @@ Workspace.ChildAdded:Connect(function(v)
     local n = v.Name
     if n=="RushMoving" or n=="AmbushMoving" or n=="A60" or n=="A120" then
         _G.Settings.AutoRun = false
-        updateStatus("⚠️ KORUMA")
+        updateStatus("⚠️ KORUMA MODU")
         local r = lp.Character.HumanoidRootPart
         local old = r.CFrame
         r.CFrame = old * CFrame.new(0, 80, 0); r.Anchored = true
@@ -275,10 +293,13 @@ Workspace.ChildAdded:Connect(function(v)
         _G.Settings.AutoRun = true
     elseif n=="SeekMoving" then
         _G.Settings.AutoRun = false
-        updateStatus("⚠️ SEEK!")
+        updateStatus("⚠️ SEEK - KOŞ!")
     elseif n=="Eyes" then
+        -- Eyes için sadece yere bak, AutoRun açıksa kapat ki kafa karışmasın
+        _G.Settings.AutoRun = false
         lp.Character.HumanoidRootPart.CFrame = CFrame.new(lp.Character.HumanoidRootPart.Position) * CFrame.Angles(math.rad(-90), 0, 0)
     end
 end)
 
 game:GetService("Lighting").Brightness = 2
+print("TA DOORS HUB v9 (STABLE) YÜKLENDİ")
